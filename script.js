@@ -10,23 +10,55 @@ const gameBoard = (function() {
         board = [["","",""],["","",""],["","",""]];
     }
     function add(x,y) {
-        board[x][y] = gameController.getActivePlayer().symbol;
+        board[x][y] = player.getActivePlayer().symbol;
     }
-    return {cell,currentBoard,add,clear}
+    return {cell, currentBoard, add, clear}
 })();
 
-const gameController = (function() {
+const player = (function() {
     function Player(name, symbol, score) {
         this.name = name;
         this.symbol = symbol;
         this.score = score;
     }
-    let playerOne = new Player("player 1","X",0);
-    let playerTwo = new Player("player 2","O",0);
+
+    let playerOne = new Player("Player 1","X",0);
+    let playerTwo = new Player("Player 2","O",0);
     let activePlayer = playerOne;
 
     const getActivePlayer = () => activePlayer;
-    function _nextTurn() {activePlayer = (activePlayer === playerOne) ? playerTwo : playerOne; }
+    function switchActivePlayer() {activePlayer = (activePlayer === playerOne) ? playerTwo : playerOne; }
+    function getScores() {
+        return [playerOne.score, playerTwo.score];
+    }
+    function getName(person) {
+        return (person == "playerOne") ? playerOne.name : playerTwo.name;
+    }
+    function setName(player, newName) {
+        if (player == "playerOne") {playerOne.name = newName;}
+        if (player == "playerTwo") {playerTwo.name = newName;}
+    }
+
+    return {getActivePlayer, switchActivePlayer, getScores, getName, setName};
+})();
+
+const gameController = (function() {
+    
+    function makeMove(x,y) {
+        if (gameBoard.cell(x,y) != "") return;
+        else gameBoard.add(x,y);
+        console.log(gameBoard.currentBoard());
+        if (_checkForWin()) {
+            displayController.displayWin(_checkForWin());
+            player.getActivePlayer().score++;
+        }
+        if (_checkForTie()) {
+            displayController.displayTie();
+        }
+        else player.switchActivePlayer();
+    }
+
+    // Returns coordinates to be highlighted by displayController on win
     function _checkForWin() {
         board = gameBoard.currentBoard();
         for (let i = 0; i < 3; i++) {
@@ -37,58 +69,50 @@ const gameController = (function() {
         if (board[0][2] == board[1][1] && board[1][1] == board[2][0]&&(board[1][1]!="")) return [[0,2],[1,1],[2,0]];
         return false;
     }
+
     function _checkForTie() {
-        let flatBoard = board.flat();
-        for (item of flatBoard) {
+        for (item of board.flat()) {
             if (item == "") return false;
         }
         return true;
     }
-    function playRound(x,y) {
-        if (gameBoard.cell(x,y) != "") return;
-        else gameBoard.add(x,y);
-        console.log(gameBoard.currentBoard());
-        if (_checkForWin()) {
-            displayController.win(_checkForWin());
-            activePlayer.score++;
-        }
-        if (_checkForTie()) {
-            displayController.tie();
-        }
-        else _nextTurn();
-    }
-    function getScore() {
-        return [playerOne.score, playerTwo.score];
-    }
-    return {getActivePlayer, playRound, getScore}
+
+    return {makeMove}
 })();
 
 const displayController = (function() {
     let board,status,cells;
-    let gameStatus = "";
-    function init() {
+    let gameEndMsg = "";
+    
+    function start() {
         cacheDom();
         bindEvents();
         render();
     }
+
     function cacheDom() {
         board = document.querySelector(".game-board");
         status = document.querySelector(".status");
         cells = document.querySelectorAll('.game-cell');
         scoreOne = document.querySelector(".score-one")
         scoreTwo = document.querySelector(".score-two")
-
     }
+
     function bindEvents() {
         board.addEventListener("click", move)
     }
+
     function move(e) {
         if (e.target.classList.contains("game-cell")) {
-            gameController.playRound(e.target.getAttribute("data-x"),e.target.getAttribute("data-y"));
+            gameController.makeMove(e.target.getAttribute("data-x"),e.target.getAttribute("data-y"));
             render();
         }
     }
+
     function render() {
+        scoreOne.textContent = `${player.getName("playerOne")} (X): ${player.getScores()[0]}`;
+        scoreTwo.textContent = `${player.getName("playerTwo")} (O): ${player.getScores()[1]}`;
+        status.textContent = (gameEndMsg) || `It is ${player.getActivePlayer().name}'s turn to move.`;
         let counter = 0;
         for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 3; j++) {
@@ -96,11 +120,9 @@ const displayController = (function() {
                 counter++;
             }
         }
-        scoreOne.textContent = `Player 1 Score: ${gameController.getScore()[0]}`;
-        scoreTwo.textContent = `Player 2 Score: ${gameController.getScore()[1]}`;
-        status.textContent = (gameStatus) || `It is P${gameController.getActivePlayer().name.substring(1)}'s turn to move.`;
     }
-    function win(highlight) {
+
+    function displayWin(highlight) {
         board.removeEventListener("click", move);
         let counter = 0;
         for (let cell of highlight) {
@@ -113,23 +135,74 @@ const displayController = (function() {
                 }
             }
         }
-        gameStatus = `P${gameController.getActivePlayer().name.substring(1)} wins! Click anywhere on the board to restart.`;
-        board.addEventListener("click", restart)
+        gameEndMsg = `${player.getActivePlayer().name} wins! Click anywhere on the board to restart.`;
+        board.addEventListener("click", resetBoard)
     }
-    function tie() {
+
+    function displayTie() {
         board.removeEventListener("click", move);
-        gameStatus = `Tie! Click anywhere on the board to restart.`;
-        board.addEventListener("click", restart)
+        gameEndMsg = `Tie! Click anywhere on the board to restart.`;
+        board.addEventListener("click", resetBoard)
     }
-    function restart() {
+
+    function resetBoard() {
         bindEvents();
         gameBoard.clear();
-        gameStatus = "";
+        gameEndMsg = "";
         cells.forEach((cell) => {cell.classList.remove("win")});
         render();
-        board.removeEventListener("click", restart)
+        board.removeEventListener("click", resetBoard)
     }
-    return {init,win,tie}
+
+    return {start, displayWin, displayTie, render}
 })();
 
-displayController.init();
+const changeName = function() {
+    let editingPlayer;
+
+    function start() {
+        cacheDOM();
+        bindEvents();
+        render();
+    }
+    function bindEvents() {
+        editNameButton.forEach((button) => {button.addEventListener("click", showDialog)});
+        nameSubmit.addEventListener("click", changeName)
+    }
+    function cacheDOM() {
+        nameDialog = document.querySelector(".edit-name-dialog");
+        editNameButton = document.querySelectorAll(".edit-name");
+        dialogTitle = document.querySelector(".edit-name-title");
+
+        nameInput = document.querySelector("#name-input");
+        nameSubmit = document.querySelector("#submit-button");
+        nameForm = document.querySelector(".name-form");
+    }
+    function showDialog(event) {
+        if (event.target.classList.contains("player-one")) {
+            dialogTitle.textContent = `Change ${player.getName("playerOne")}'s name`;
+            editingPlayer = "one";
+        }
+        if (event.target.classList.contains("player-two")) {
+            dialogTitle.textContent = `Change ${player.getName("playerTwo")}'s name`;
+            editingPlayer = "two";
+        }
+
+        nameDialog.showModal();
+    }   
+    function changeName(event) {
+        event.preventDefault();
+        if (!nameInput.value) return;
+        else {
+            if (editingPlayer == "one") {player.setName("playerOne",nameInput.value)}
+            if (editingPlayer == "two") {player.setName("playerTwo",nameInput.value)}
+        }
+        nameDialog.close();
+        nameForm.reset();
+        displayController.render();
+    }
+    return {start}
+}();
+
+displayController.start();
+changeName.start();

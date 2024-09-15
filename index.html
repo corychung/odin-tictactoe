@@ -9,7 +9,9 @@
 <body>
     <div class="scores">
         <p class="score-one"></p>
+        <button class="edit-name player-one" type="button">Edit Name</button>
         <p class="score-two"></p>
+        <button class="edit-name player-two" type="button">Edit Name</button>
     </div>
     <div class="game-board">
         <button class="game-cell" id="1" data-x="0" data-y="0" type="button"> </button>
@@ -23,6 +25,16 @@
         <button class="game-cell" id="9" data-x="2" data-y="2" type="button"> </button>
     </div>
     <p class="status"></p>
+
+    <dialog class="edit-name-dialog" close>
+        <p class="edit-name-title">Edit Name</p>
+        <form class="name-form" action="submit" method="dialog">
+            <label for="name-input">New name: </label>
+            <input type="text" id="name-input" name="name" placeholder="John">
+            <button id="submit-button" type="submit">Submit</button>
+        </form>
+    </dialog>
+
     <script src="script.js"></script>
 </body>
 </html>

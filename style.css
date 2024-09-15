@@ -28,6 +28,9 @@ body {
     color:lightblue;
     background-color: black;
     border: 1px solid lightblue;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .game-cell:active {
@@ -37,15 +40,51 @@ body {
 .status,.score-one,.score-two {
     color:white;
     height:2rem;
+    vertical-align:bottom;
+
 }
 
 .scores {
-    display:flex;
-    flex-direction: column;
-    justify-content: space-between;
+    display:grid;
+    grid-template: 1fr 1fr / 5fr 2fr;
     width: 300px;
+    gap:10px;
+    margin-bottom: 10px;
+}
+
+.scores p {
+    display:flex;
+    align-items: center;
 }
 
 .win {
     color:lightgreen;
+}
+
+.edit-name {
+    border-radius:8px;
+    padding: 8px;
+}
+
+.edit-name-dialog {
+    margin:auto;
+    padding:16px;
+}
+
+.edit-name-dialog[open] {
+    display:flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-radius: 8px;
+}
+
+.edit-name-title {
+    font-size: 18px;
+    margin-bottom: 18px;
+}
+
+
+.edit-name-dialog::backdrop {
+    background-color:black;
+    opacity: .5;
 }
